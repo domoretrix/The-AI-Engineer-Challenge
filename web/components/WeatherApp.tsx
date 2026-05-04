@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getApiBase } from "@/lib/api";
 import { formatApiErrorBody } from "@/lib/httpError";
 import { IconClock, IconMapPin, IconThermometer, IconThermometerFeels, IconWind } from "@/components/weather-icons";
@@ -8,15 +8,19 @@ import { formatWeatherDateOnly } from "@/lib/formatWeatherDate";
 import { weatherBackdropUrl } from "@/lib/weatherBackdrop";
 import { isWeatherEntity, type WeatherEntity } from "@/lib/types";
 
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
 export function WeatherApp() {
   const apiBase = useMemo(() => getApiBase(), []);
   const [apiKey, setApiKey] = useState("");
   const [phase, setPhase] = useState<"welcome" | "chat">("welcome");
   const [message, setMessage] = useState("");
   const [weather, setWeather] = useState<WeatherEntity | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatDocked, setChatDocked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const submitKey = useCallback(async () => {
     setError(null);
@@ -48,6 +52,8 @@ export function WeatherApp() {
     setError(null);
     const text = message.trim();
     if (!text) return;
+    setMessage("");
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setBusy(true);
     try {
       const res = await fetch(`${apiBase}/api/chat`, {
@@ -58,17 +64,20 @@ export function WeatherApp() {
       const raw: unknown = await res.json().catch(() => null);
       if (!res.ok) {
         setError(formatApiErrorBody(raw, res.statusText || "Request failed"));
+        setMessages((prev) => prev.slice(0, -1));
         return;
       }
       if (!isWeatherEntity(raw)) {
         setError("Unexpected response from the server.");
+        setMessages((prev) => prev.slice(0, -1));
         return;
       }
+      setMessages((prev) => [...prev, { role: "assistant", content: raw.response }]);
       setWeather(raw);
       setChatDocked(true);
-      setMessage("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not reach the API.");
+      setMessages((prev) => prev.slice(0, -1));
     } finally {
       setBusy(false);
     }
@@ -85,6 +94,10 @@ export function WeatherApp() {
   };
 
   const backdropUrl = useMemo(() => weatherBackdropUrl(weather?.weather_type ?? null), [weather?.weather_type]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, busy]);
 
   return (
     <div className="relative min-h-dvh text-slate-50">
@@ -167,20 +180,56 @@ export function WeatherApp() {
 
             <div className={`chat-shell ${chatDocked ? "chat-shell--docked" : ""}`}>
               <div
-                className="rounded-2xl border p-5 shadow-2xl backdrop-blur-md"
+                className="flex max-h-[min(72vh,560px)] flex-col rounded-2xl border p-5 shadow-2xl backdrop-blur-md"
                 style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
               >
-                <h2 className="text-lg font-semibold text-white">Ask the weather</h2>
-                <p className="mt-1 text-xs" style={{ color: "var(--card-muted)" }}>
-                  Example: &quot;What&apos;s the weather like in Lisbon tomorrow morning?&quot;
+                <h2 className="shrink-0 text-lg font-semibold text-white">Weather chat</h2>
+                <p className="mt-1 shrink-0 text-xs" style={{ color: "var(--card-muted)" }}>
+                  Messages appear below like a normal chat. Ask about any place on Earth.
                 </p>
-                <form className="mt-4 space-y-3" onSubmit={onChatSubmit}>
+
+                <div
+                  className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-white/10 bg-black/25 p-3 pr-2"
+                  style={{ maxHeight: chatDocked ? "min(28vh, 220px)" : "min(36vh, 320px)" }}
+                  role="log"
+                  aria-live="polite"
+                >
+                  {messages.length === 0 && (
+                    <p className="py-6 text-center text-sm" style={{ color: "var(--card-muted)" }}>
+                      No messages yet. Try: &quot;What&apos;s the weather in Tokyo?&quot;
+                    </p>
+                  )}
+                  {messages.map((m, idx) => (
+                    <div key={`${idx}-${m.role}`} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                      <div
+                        className={
+                          m.role === "user"
+                            ? "max-w-[min(92%,28rem)] rounded-2xl rounded-br-md bg-sky-600 px-3.5 py-2.5 text-left text-sm leading-relaxed text-white shadow-md"
+                            : "max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/95 px-3.5 py-2.5 text-left text-sm leading-relaxed text-slate-100 shadow-md"
+                        }
+                      >
+                        {m.content}
+                      </div>
+                    </div>
+                  ))}
+                  {busy && (
+                    <div className="flex justify-start">
+                      <div className="rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/80 px-3.5 py-2.5 text-sm text-slate-400">
+                        Thinking…
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form className="mt-4 shrink-0 space-y-3" onSubmit={onChatSubmit}>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    rows={chatDocked ? 2 : 4}
-                    placeholder="Ask about weather at any location…"
-                    className="max-h-48 min-h-[5.5rem] w-full resize-y rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none ring-2 ring-transparent transition placeholder:text-slate-500 focus:border-sky-400/60 focus:ring-sky-500/30"
+                    rows={chatDocked ? 2 : 3}
+                    placeholder="Type a message…"
+                    className="max-h-40 min-h-[3rem] w-full resize-y rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none ring-2 ring-transparent transition placeholder:text-slate-500 focus:border-sky-400/60 focus:ring-sky-500/30"
+                    disabled={busy}
                   />
                   {error && <p className="text-sm text-rose-300">{error}</p>}
                   <button
@@ -188,7 +237,7 @@ export function WeatherApp() {
                     disabled={busy || !message.trim()}
                     className="flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {busy ? "Thinking…" : "Send"}
+                    {busy ? "Sending…" : "Send"}
                   </button>
                 </form>
               </div>

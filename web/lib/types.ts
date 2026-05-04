@@ -35,6 +35,8 @@ export type WeatherEntity = {
   wind_speed: number;
   weather_type: WeatherType;
   description: string;
+  /** Conversational assistant reply for in-app chat */
+  response: string;
 };
 
 export function isWeatherEntity(value: unknown): value is WeatherEntity {
@@ -48,6 +50,7 @@ export function isWeatherEntity(value: unknown): value is WeatherEntity {
     typeof o.wind_speed === "number" &&
     typeof o.weather_type === "string" &&
     WEATHER_TYPES.includes(o.weather_type as WeatherType) &&
-    typeof o.description === "string"
+    typeof o.description === "string" &&
+    typeof o.response === "string"
   );
 }
