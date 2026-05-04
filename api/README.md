@@ -48,13 +48,13 @@ If you encounter an "Address already in use" error, you may need to kill existin
 lsof -ti:8000 | xargs kill -9
 ```
 
-## Web frontend (`web/`)
+## Web frontend (`frontend/`)
 
 The Next.js UI talks to this API over HTTP. By default it assumes the backend is at:
 
 **`http://127.0.0.1:8000`**
 
-To point the app at a different host or port (for example another machine or a staging URL), create `web/.env.local` and set:
+To point the app at a different host or port (for example another machine or a staging URL), create `frontend/.env.local` and set:
 
 ```bash
 NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000

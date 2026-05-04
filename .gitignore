@@ -20,9 +20,9 @@ eggs/
 lib/
 lib64/
 
-# Next.js app uses `web/lib` for shared TS modules (un-ignore Python-oriented `lib/` rule)
-!web/lib/
-!web/lib/**
+# Next.js app uses `frontend/lib` for shared TS modules (un-ignore Python-oriented `lib/` rule)
+!frontend/lib/
+!frontend/lib/**
 parts/
 sdist/
 var/
