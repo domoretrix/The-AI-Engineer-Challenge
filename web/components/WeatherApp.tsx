@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { getApiBase } from "@/lib/api";
 import { formatApiErrorBody } from "@/lib/httpError";
 import { IconClock, IconMapPin, IconThermometer, IconThermometerFeels, IconWind } from "@/components/weather-icons";
+import { formatWeatherDateOnly } from "@/lib/formatWeatherDate";
 import { weatherBackdropUrl } from "@/lib/weatherBackdrop";
 import { isWeatherEntity, type WeatherEntity } from "@/lib/types";
 
@@ -156,7 +157,7 @@ export function WeatherApp() {
 
                 <div className="pointer-events-auto mx-auto grid w-full max-w-5xl grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
                   <WeatherMetricCard kind="location" label="Location" value={weather.location} />
-                  <WeatherMetricCard kind="datetime" label="As of" value={weather.weather_date} />
+                  <WeatherMetricCard kind="datetime" label="Date" value={formatWeatherDateOnly(weather.weather_date)} />
                   <WeatherMetricCard kind="temperature" label="Temperature" value={`${weather.temperature.toFixed(1)}°F`} accent />
                   <WeatherMetricCard kind="feels" label="Feels like" value={`${weather.feels_like.toFixed(1)}°F`} accent />
                   <WeatherMetricCard kind="wind" label="Wind" value={`${weather.wind_speed.toFixed(1)} mph`} />
