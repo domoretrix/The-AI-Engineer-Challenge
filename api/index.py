@@ -57,7 +57,8 @@ class WeatherEntity(BaseModel):
         "dusty",      # dust storms, reduced air quality
         "overcast",   # sky completely covered with clouds
         "tornado"     # tornado occurrence
-    ] = Field(description="The best description of the current weather at the location at the moment.")
+    ] = Field(description="The mose representative state of the current weather at the location.")
+    description: str = Field(description="A brief over all description of the weather at the location.")
 
 @app.get("/")
 def root():
