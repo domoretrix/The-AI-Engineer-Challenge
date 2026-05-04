@@ -1,0 +1,388 @@
+@import "tailwindcss";
+
+:root {
+  --card-bg: rgba(15, 23, 42, 0.82);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --card-text: #f8fafc;
+  --card-muted: #94a3b8;
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* ---- Full-page atmospheric backgrounds (one per `weather_type` from the API) ---- */
+.weather-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  transition: opacity 0.9s ease;
+}
+
+.weather-bg::before,
+.weather-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Default / neutral */
+.weather-bg--default {
+  background: linear-gradient(160deg, #0f172a 0%, #1e293b 45%, #334155 100%);
+}
+
+/* Sunny — bright sky, warm horizon */
+.weather-bg--sunny {
+  background: linear-gradient(185deg, #38bdf8 0%, #7dd3fc 35%, #fde047 88%, #f97316 100%);
+}
+.weather-bg--sunny::before {
+  background: radial-gradient(
+    circle at 18% 12%,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 248, 200, 0.35) 22%,
+    transparent 45%
+  );
+  animation: sun-pulse 8s ease-in-out infinite;
+}
+@keyframes sun-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+/* Rainy — slate sky, cool rain streaks */
+.weather-bg--rainy {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 55%, #0f172a 100%);
+}
+.weather-bg--rainy::before {
+  background: repeating-linear-gradient(
+    105deg,
+    transparent,
+    transparent 6px,
+    rgba(148, 163, 184, 0.12) 6px,
+    rgba(148, 163, 184, 0.12) 7px
+  );
+  animation: rain-fall 6s linear infinite;
+  opacity: 0.7;
+}
+@keyframes rain-fall {
+  from {
+    transform: translateY(-12%);
+  }
+  to {
+    transform: translateY(12%);
+  }
+}
+
+/* Cloudy — soft layered grays */
+.weather-bg--cloudy {
+  background: linear-gradient(200deg, #94a3b8 0%, #64748b 40%, #475569 100%);
+}
+.weather-bg--cloudy::before {
+  background: radial-gradient(ellipse 120% 60% at 30% 100%, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(ellipse 100% 50% at 80% 30%, rgba(255, 255, 255, 0.15), transparent);
+  animation: cloud-drift 45s linear infinite;
+}
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-4%);
+  }
+  to {
+    transform: translateX(4%);
+  }
+}
+
+/* Snowy — cold blue-white */
+.weather-bg--snowy {
+  background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 40%, #f8fafc 100%);
+}
+.weather-bg--snowy::before {
+  background-image: radial-gradient(2px 2px at 20% 30%, white, transparent),
+    radial-gradient(2px 2px at 60% 70%, white, transparent),
+    radial-gradient(2px 2px at 80% 20%, white, transparent);
+  background-size: 200px 200px;
+  animation: snow-drift 14s linear infinite;
+  opacity: 0.85;
+}
+@keyframes snow-drift {
+  from {
+    transform: translateY(-10%);
+  }
+  to {
+    transform: translateY(10%);
+  }
+}
+
+/* Stormy — electric deep blues */
+.weather-bg--stormy {
+  background: linear-gradient(185deg, #1e1b4b 0%, #312e81 40%, #0f172a 100%);
+}
+.weather-bg--stormy::before {
+  background: linear-gradient(
+    transparent 0%,
+    rgba(250, 204, 21, 0.15) 48%,
+    transparent 52%
+  );
+  animation: lightning 5s steps(2, end) infinite;
+  opacity: 0;
+}
+@keyframes lightning {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+  93% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0;
+  }
+}
+
+/* Foggy — low-contrast mist */
+.weather-bg--foggy {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+}
+.weather-bg--foggy::before {
+  background: radial-gradient(ellipse at 50% 100%, rgba(248, 250, 252, 0.55), transparent 60%);
+  animation: fog-roll 20s ease-in-out infinite alternate;
+}
+@keyframes fog-roll {
+  from {
+    transform: translateY(4%) scale(1.02);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(-2%) scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Windy — streaked motion */
+.weather-bg--windy {
+  background: linear-gradient(120deg, #64748b 0%, #94a3b8 50%, #cbd5e1 100%);
+}
+.weather-bg--windy::before {
+  background: repeating-linear-gradient(
+    12deg,
+    transparent,
+    transparent 40px,
+    rgba(255, 255, 255, 0.06) 40px,
+    rgba(255, 255, 255, 0.06) 42px
+  );
+  animation: wind-shear 3s linear infinite;
+}
+@keyframes wind-shear {
+  from {
+    transform: translateX(-6%);
+  }
+  to {
+    transform: translateX(6%);
+  }
+}
+
+/* Hazy — smog / heat shimmer */
+.weather-bg--hazy {
+  background: linear-gradient(180deg, #a8a29e 0%, #78716c 50%, #57534e 100%);
+}
+.weather-bg--hazy::before {
+  backdrop-filter: blur(1px);
+  background: rgba(253, 230, 138, 0.12);
+}
+
+/* Drizzle — light, fine rain */
+.weather-bg--drizzle {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+}
+.weather-bg--drizzle::before {
+  background: repeating-linear-gradient(
+    100deg,
+    transparent,
+    transparent 10px,
+    rgba(226, 232, 240, 0.08) 10px,
+    rgba(226, 232, 240, 0.08) 11px
+  );
+  animation: rain-fall 10s linear infinite;
+}
+
+/* Sleet — icy violet mix */
+.weather-bg--sleet {
+  background: linear-gradient(200deg, #6366f1 0%, #a5b4fc 35%, #e2e8f0 100%);
+}
+.weather-bg--sleet::before {
+  background: repeating-linear-gradient(
+    95deg,
+    transparent,
+    transparent 8px,
+    rgba(255, 255, 255, 0.1) 8px,
+    rgba(255, 255, 255, 0.1) 9px
+  );
+  animation: rain-fall 7s linear infinite;
+}
+
+/* Hail — dark sky, icy pellets */
+.weather-bg--hail {
+  background: linear-gradient(180deg, #1e293b 0%, #334155 60%, #475569 100%);
+}
+.weather-bg--hail::before {
+  background-image: radial-gradient(3px 3px at 25% 40%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(3px 3px at 70% 55%, rgba(255, 255, 255, 0.85), transparent);
+  background-size: 120px 120px;
+  animation: hail-shake 0.8s linear infinite;
+  opacity: 0.5;
+}
+@keyframes hail-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+/* Blizzard — whiteout */
+.weather-bg--blizzard {
+  background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 50%, #cbd5e1 100%);
+}
+.weather-bg--blizzard::before {
+  background: repeating-linear-gradient(
+    15deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.35) 2px,
+    transparent 2px,
+    transparent 18px
+  );
+  animation: wind-shear 2s linear infinite;
+  mix-blend-mode: overlay;
+}
+
+/* Hot — intense heat */
+.weather-bg--hot {
+  background: linear-gradient(185deg, #f97316 0%, #ea580c 40%, #7f1d1d 100%);
+}
+.weather-bg--hot::before {
+  background: radial-gradient(circle at 50% 110%, rgba(254, 243, 199, 0.35), transparent 55%);
+  animation: heat-shimmer 4s ease-in-out infinite alternate;
+}
+@keyframes heat-shimmer {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 0.95;
+  }
+}
+
+/* Cold — crisp arctic */
+.weather-bg--cold {
+  background: linear-gradient(200deg, #38bdf8 0%, #0ea5e9 45%, #0369a1 100%);
+}
+.weather-bg--cold::before {
+  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.25), transparent 40%);
+}
+
+/* Freezing — ice rim */
+.weather-bg--freezing {
+  background: linear-gradient(180deg, #93c5fd 0%, #e0f2fe 55%, #f0f9ff 100%);
+}
+.weather-bg--freezing::before {
+  box-shadow: inset 0 0 120px rgba(59, 130, 246, 0.18);
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.45), transparent 55%);
+}
+
+/* Humid — lush green-blue */
+.weather-bg--humid {
+  background: linear-gradient(165deg, #0d9488 0%, #14b8a6 40%, #134e4a 100%);
+}
+.weather-bg--humid::before {
+  background: radial-gradient(ellipse at 50% 0%, rgba(204, 251, 241, 0.25), transparent 55%);
+}
+
+/* Dry — arid sand */
+.weather-bg--dry {
+  background: linear-gradient(180deg, #fcd34d 0%, #d97706 45%, #92400e 100%);
+}
+.weather-bg--dry::before {
+  background: radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.12), transparent 50%);
+}
+
+/* Dusty — ochre storm */
+.weather-bg--dusty {
+  background: linear-gradient(185deg, #b45309 0%, #ca8a04 35%, #78350f 100%);
+}
+.weather-bg--dusty::before {
+  background: repeating-linear-gradient(
+    -8deg,
+    transparent,
+    transparent 30px,
+    rgba(254, 215, 170, 0.08) 30px,
+    rgba(254, 215, 170, 0.08) 32px
+  );
+  animation: wind-shear 5s linear infinite;
+}
+
+/* Overcast — flat lid */
+.weather-bg--overcast {
+  background: linear-gradient(180deg, #64748b 0%, #475569 50%, #334155 100%);
+}
+
+/* Tornado — threatening green-gray */
+.weather-bg--tornado {
+  background: radial-gradient(ellipse 80% 120% at 50% 120%, #14532d 0%, #422006 45%, #0f172a 100%);
+}
+.weather-bg--tornado::before {
+  background: conic-gradient(from 180deg at 50% 100%, transparent, rgba(34, 197, 94, 0.12), transparent);
+  animation: tornado-spin 18s linear infinite;
+  opacity: 0.85;
+}
+@keyframes tornado-spin {
+  from {
+    transform: rotate(0deg) scale(1.2);
+  }
+  to {
+    transform: rotate(360deg) scale(1.2);
+  }
+}
+
+/* ---- Chat shell: center → docked bottom ---- */
+.chat-shell {
+  position: fixed;
+  left: 50%;
+  top: 44%;
+  bottom: auto;
+  z-index: 40;
+  width: min(92vw, 28rem);
+  transform: translate(-50%, -50%);
+  transition:
+    top 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+    bottom 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.chat-shell--docked {
+  top: auto;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  width: min(94vw, 42rem);
+  transform: translateX(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-shell {
+    transition: none;
+  }
+  .weather-bg::before,
+  .weather-bg::after {
+    animation: none !important;
+  }
+}
