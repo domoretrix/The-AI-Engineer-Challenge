@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { getApiBase } from "@/lib/api";
 import { formatApiErrorBody } from "@/lib/httpError";
+import { IconClock, IconMapPin, IconThermometer, IconThermometerFeels, IconWind } from "@/components/weather-icons";
 import { isWeatherEntity, type WeatherEntity, type WeatherType } from "@/lib/types";
 
 function weatherBgClass(type: WeatherType | null): string {
@@ -153,11 +154,11 @@ export function WeatherApp() {
                 </div>
 
                 <div className="pointer-events-auto mx-auto grid w-full max-w-5xl grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-                  <MetricCard label="Location" value={weather.location} />
-                  <MetricCard label="As of" value={weather.weather_date} />
-                  <MetricCard label="Temperature" value={`${weather.temperature.toFixed(1)}°F`} accent />
-                  <MetricCard label="Feels like" value={`${weather.feels_like.toFixed(1)}°F`} accent />
-                  <MetricCard label="Wind" value={`${weather.wind_speed.toFixed(1)} mph`} />
+                  <WeatherMetricCard kind="location" label="Location" value={weather.location} />
+                  <WeatherMetricCard kind="datetime" label="As of" value={weather.weather_date} />
+                  <WeatherMetricCard kind="temperature" label="Temperature" value={`${weather.temperature.toFixed(1)}°F`} accent />
+                  <WeatherMetricCard kind="feels" label="Feels like" value={`${weather.feels_like.toFixed(1)}°F`} accent />
+                  <WeatherMetricCard kind="wind" label="Wind" value={`${weather.wind_speed.toFixed(1)} mph`} />
                 </div>
               </header>
             )}
@@ -197,30 +198,64 @@ export function WeatherApp() {
   );
 }
 
-function MetricCard({
+type MetricKind = "location" | "datetime" | "temperature" | "feels" | "wind";
+
+function WeatherMetricCard({
+  kind,
   label,
   value,
   accent,
   className = "",
 }: {
+  kind: MetricKind;
   label: string;
   value: string;
   accent?: boolean;
   className?: string;
 }) {
+  const iconTint =
+    kind === "temperature"
+      ? "text-amber-300"
+      : kind === "feels"
+        ? "text-orange-300"
+        : kind === "wind"
+          ? "text-cyan-300"
+          : kind === "location"
+            ? "text-emerald-300"
+            : "text-violet-300";
+
+  const Icon =
+    kind === "location"
+      ? IconMapPin
+      : kind === "datetime"
+        ? IconClock
+        : kind === "temperature"
+          ? IconThermometer
+          : kind === "feels"
+            ? IconThermometerFeels
+            : IconWind;
+
   return (
     <div
-      className={`rounded-2xl border p-4 shadow-lg backdrop-blur-md ${accent ? "ring-1 ring-sky-400/40" : ""} ${className}`}
+      className={`flex gap-3 rounded-2xl border p-4 shadow-lg backdrop-blur-md ${accent ? "ring-1 ring-sky-400/35" : ""} ${className}`}
       style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--card-muted)" }}>
-        {label}
-      </p>
-      <p
-        className={`mt-2 break-words font-semibold leading-snug text-slate-50 ${accent ? "text-2xl tabular-nums" : "text-sm"}`}
+      <div
+        className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] ring-1 ring-white/10 ${iconTint}`}
+        aria-hidden
       >
-        {value}
-      </p>
+        <Icon className="h-9 w-9" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--card-muted)" }}>
+          {label}
+        </p>
+        <p
+          className={`mt-1.5 break-words font-semibold leading-snug text-slate-50 ${accent ? "text-2xl tabular-nums tracking-tight" : "text-sm"}`}
+        >
+          {value}
+        </p>
+      </div>
     </div>
   );
 }
