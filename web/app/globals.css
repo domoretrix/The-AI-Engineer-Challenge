@@ -11,7 +11,7 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* Full-page static artwork from `public/weather/*.svg` — no CSS animation */
+/* Full-page static artwork from `public/weather/*.jpg` — no CSS animation */
 .weather-bg {
   position: fixed;
   inset: 0;
