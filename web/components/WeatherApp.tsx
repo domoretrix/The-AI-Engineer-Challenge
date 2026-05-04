@@ -4,12 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { getApiBase } from "@/lib/api";
 import { formatApiErrorBody } from "@/lib/httpError";
 import { IconClock, IconMapPin, IconThermometer, IconThermometerFeels, IconWind } from "@/components/weather-icons";
-import { isWeatherEntity, type WeatherEntity, type WeatherType } from "@/lib/types";
-
-function weatherBgClass(type: WeatherType | null): string {
-  if (!type) return "weather-bg weather-bg--default";
-  return `weather-bg weather-bg--${type}`;
-}
+import { weatherBackdropUrl } from "@/lib/weatherBackdrop";
+import { isWeatherEntity, type WeatherEntity } from "@/lib/types";
 
 export function WeatherApp() {
   const apiBase = useMemo(() => getApiBase(), []);
@@ -87,9 +83,14 @@ export function WeatherApp() {
     void submitKey();
   };
 
+  const backdropUrl = useMemo(() => weatherBackdropUrl(weather?.weather_type ?? null), [weather?.weather_type]);
+
   return (
     <div className="relative min-h-dvh text-slate-50">
-      <div className={weatherBgClass(weather?.weather_type ?? null)} aria-hidden />
+      <div className="weather-bg" aria-hidden>
+        <div className="weather-bg__image" style={{ backgroundImage: `url(${backdropUrl})` }} />
+        <div className="weather-bg__scrim" />
+      </div>
 
       <div className="relative z-10 flex min-h-dvh flex-col">
         {phase === "welcome" && (

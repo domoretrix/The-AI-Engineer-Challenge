@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <rect x="0" y="0" width="1920" height="520" fill="#475569" opacity="0.85"/>
+  <ellipse cx="680" cy="260" rx="500" ry="130" fill="#64748b"/>
+  <ellipse cx="1200" cy="280" rx="520" ry="140" fill="#94a3b8" opacity="0.85"/>
+  <path d="M0 720 Q960 680 1920 700 V1080 H0 Z" fill="#1e293b"/>
+</svg>
