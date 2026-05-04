@@ -2,9 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 import os
 from dotenv import load_dotenv
 
@@ -22,7 +22,7 @@ app.add_middleware(
 
 # Use app.state to store OpenAI client
 app.state.client = None
-
+app.state.message_history = []
 class ChatRequest(BaseModel):
     message: str
 
@@ -59,6 +59,7 @@ class WeatherEntity(BaseModel):
         "tornado"     # tornado occurrence
     ] = Field(description="The mose representative state of the current weather at the location.")
     description: str = Field(description="A brief over all description of the weather at the location.")
+    response: str = Field(description="The response to the user's message.")
 
 @app.get("/")
 def root():
@@ -83,13 +84,16 @@ def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
     
     try:
+       history = app.state.message_history[-5:]
        user_message = request.message
        model = app.state.client or ChatOpenAI(model="gpt-5.2")
-       messages = [
-           SystemMessage("You are a helpful agent that can provide current weather information for any location on the planet. When asked about the weather in any place, you retrieve and share the latest weather details clearly and accurately."),
-       ]
+       system_message = SystemMessage("You are a helpful agent that can provide current weather information for any location on the planet. When asked about the weather in any place, you retrieve and share the latest weather details clearly and accurately.")
+       # Structured output returns a Pydantic model; AIMessage content must be a string for the chat history.
        llm = model.with_structured_output(WeatherEntity)
-       response = llm.invoke(messages + [HumanMessage(user_message)])
+       response = llm.invoke([system_message, *history, HumanMessage(user_message)])
+       history.append(HumanMessage(user_message))
+       history.append(AIMessage(content=response.model_dump_json()))
+       app.state.message_history = [*history]
 
        return response
     except Exception as e:
