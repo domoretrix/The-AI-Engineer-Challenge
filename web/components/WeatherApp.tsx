@@ -1,5 +1,6 @@
 "use client";
 
+import type { SVGProps } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getApiBase } from "@/lib/api";
 import { formatApiErrorBody } from "@/lib/httpError";
@@ -18,6 +19,8 @@ export function WeatherApp() {
   const [weather, setWeather] = useState<WeatherEntity | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatDocked, setChatDocked] = useState(false);
+  /** When true, only a slim bar is shown so weather widgets stay visible */
+  const [chatMinimized, setChatMinimized] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,13 +78,15 @@ export function WeatherApp() {
       setMessages((prev) => [...prev, { role: "assistant", content: raw.response }]);
       setWeather(raw);
       setChatDocked(true);
+      // First successful forecast: tuck chat away so metric widgets are easy to read
+      if (weather === null) setChatMinimized(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not reach the API.");
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setBusy(false);
     }
-  }, [apiBase, message]);
+  }, [apiBase, message, weather]);
 
   const onChatSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +162,9 @@ export function WeatherApp() {
         {phase === "chat" && (
           <>
             {weather && (
-              <header className="pointer-events-none z-30 flex flex-col gap-3 px-4 pb-2 pt-[max(1rem,env(safe-area-inset-top))]">
+              <header
+                className={`pointer-events-none z-30 flex flex-col gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] ${chatMinimized ? "pb-24" : "pb-[min(42vh,22rem)]"}`}
+              >
                 <div className="pointer-events-auto mx-auto w-full max-w-3xl opacity-100 transition-opacity duration-500">
                   <div
                     className="rounded-2xl border px-5 py-4 shadow-xl backdrop-blur-md"
@@ -178,74 +185,127 @@ export function WeatherApp() {
               </header>
             )}
 
-            <div className={`chat-shell ${chatDocked ? "chat-shell--docked" : ""}`}>
-              <div
-                className="flex max-h-[min(72vh,560px)] flex-col rounded-2xl border p-5 shadow-2xl backdrop-blur-md"
-                style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
-              >
-                <h2 className="shrink-0 text-lg font-semibold text-white">Weather chat</h2>
-                <p className="mt-1 shrink-0 text-xs" style={{ color: "var(--card-muted)" }}>
-                  Messages appear below like a normal chat. Ask about any place on Earth.
-                </p>
-
-                <div
-                  className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-white/10 bg-black/25 p-3 pr-2"
-                  style={{ maxHeight: chatDocked ? "min(28vh, 220px)" : "min(36vh, 320px)" }}
-                  role="log"
-                  aria-live="polite"
+            <div
+              className={`chat-shell ${chatDocked ? "chat-shell--docked" : ""} ${chatMinimized ? "chat-shell--minimized" : ""}`}
+            >
+              {chatMinimized ? (
+                <button
+                  type="button"
+                  onClick={() => setChatMinimized(false)}
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 text-left shadow-2xl backdrop-blur-md transition hover:bg-white/5"
+                  style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
+                  aria-expanded={false}
                 >
-                  {messages.length === 0 && (
-                    <p className="py-6 text-center text-sm" style={{ color: "var(--card-muted)" }}>
-                      No messages yet. Try: &quot;What&apos;s the weather in Tokyo?&quot;
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">Weather chat</p>
+                    <p className="mt-0.5 text-xs" style={{ color: "var(--card-muted)" }}>
+                      {messages.length === 0
+                        ? "Tap to ask about the weather"
+                        : `${messages.length} message${messages.length === 1 ? "" : "s"} · tap to expand`}
                     </p>
-                  )}
-                  {messages.map((m, idx) => (
-                    <div key={`${idx}-${m.role}`} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                      <div
-                        className={
-                          m.role === "user"
-                            ? "max-w-[min(92%,28rem)] rounded-2xl rounded-br-md bg-sky-600 px-3.5 py-2.5 text-left text-sm leading-relaxed text-white shadow-md"
-                            : "max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/95 px-3.5 py-2.5 text-left text-sm leading-relaxed text-slate-100 shadow-md"
-                        }
-                      >
-                        {m.content}
-                      </div>
+                  </div>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-200" aria-hidden>
+                    <IconChevronUp className="h-5 w-5" />
+                  </span>
+                </button>
+              ) : (
+                <div
+                  className="flex max-h-[min(72vh,560px)] flex-col rounded-2xl border p-5 shadow-2xl backdrop-blur-md"
+                  style={{ background: "var(--card-bg)", borderColor: "var(--card-border)" }}
+                >
+                  <div className="flex shrink-0 items-start justify-between gap-2">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">Weather chat</h2>
+                      <p className="mt-1 text-xs" style={{ color: "var(--card-muted)" }}>
+                        Ask about any place on Earth. Minimize to see the forecast cards.
+                      </p>
                     </div>
-                  ))}
-                  {busy && (
-                    <div className="flex justify-start">
-                      <div className="rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/80 px-3.5 py-2.5 text-sm text-slate-400">
-                        Thinking…
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setChatMinimized(true)}
+                      className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/10"
+                      aria-label="Minimize chat"
+                    >
+                      <span>Minimize</span>
+                      <IconChevronDown className="h-4 w-4" aria-hidden />
+                    </button>
+                  </div>
 
-                <form className="mt-4 shrink-0 space-y-3" onSubmit={onChatSubmit}>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={chatDocked ? 2 : 3}
-                    placeholder="Type a message…"
-                    className="max-h-40 min-h-[3rem] w-full resize-y rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none ring-2 ring-transparent transition placeholder:text-slate-500 focus:border-sky-400/60 focus:ring-sky-500/30"
-                    disabled={busy}
-                  />
-                  {error && <p className="text-sm text-rose-300">{error}</p>}
-                  <button
-                    type="submit"
-                    disabled={busy || !message.trim()}
-                    className="flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  <div
+                    className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-white/10 bg-black/25 p-3 pr-2"
+                    style={{ maxHeight: chatDocked ? "min(28vh, 220px)" : "min(36vh, 320px)" }}
+                    role="log"
+                    aria-live="polite"
                   >
-                    {busy ? "Sending…" : "Send"}
-                  </button>
-                </form>
-              </div>
+                    {messages.length === 0 && (
+                      <p className="py-6 text-center text-sm" style={{ color: "var(--card-muted)" }}>
+                        No messages yet. Try: &quot;What&apos;s the weather in Tokyo?&quot;
+                      </p>
+                    )}
+                    {messages.map((m, idx) => (
+                      <div key={`${idx}-${m.role}`} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                        <div
+                          className={
+                            m.role === "user"
+                              ? "max-w-[min(92%,28rem)] rounded-2xl rounded-br-md bg-sky-600 px-3.5 py-2.5 text-left text-sm leading-relaxed text-white shadow-md"
+                              : "max-w-[min(92%,28rem)] rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/95 px-3.5 py-2.5 text-left text-sm leading-relaxed text-slate-100 shadow-md"
+                          }
+                        >
+                          {m.content}
+                        </div>
+                      </div>
+                    ))}
+                    {busy && (
+                      <div className="flex justify-start">
+                        <div className="rounded-2xl rounded-bl-md border border-white/10 bg-slate-800/80 px-3.5 py-2.5 text-sm text-slate-400">
+                          Thinking…
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  <form className="mt-4 shrink-0 space-y-3" onSubmit={onChatSubmit}>
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      rows={chatDocked ? 2 : 3}
+                      placeholder="Type a message…"
+                      className="max-h-40 min-h-[3rem] w-full resize-y rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-sm text-slate-100 outline-none ring-2 ring-transparent transition placeholder:text-slate-500 focus:border-sky-400/60 focus:ring-sky-500/30"
+                      disabled={busy}
+                    />
+                    {error && <p className="text-sm text-rose-300">{error}</p>}
+                    <button
+                      type="submit"
+                      disabled={busy || !message.trim()}
+                      className="flex w-full items-center justify-center rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {busy ? "Sending…" : "Send"}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+function IconChevronDown(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+function IconChevronUp(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
+      <path d="M18 15l-6-6-6 6" />
+    </svg>
   );
 }
 

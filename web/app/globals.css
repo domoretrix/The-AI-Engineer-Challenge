@@ -57,6 +57,11 @@ body {
   transform: translateX(-50%);
 }
 
+/* Compact bar when chat is minimized — less vertical obstruction over widgets */
+.chat-shell--minimized {
+  width: min(94vw, 42rem);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chat-shell {
     transition: none;
