@@ -150,11 +150,6 @@ export function WeatherApp() {
                   {busy ? "Connecting…" : "Save key & continue"}
                 </button>
               </form>
-              <p className="mt-6 text-center text-xs" style={{ color: "var(--card-muted)" }}>
-                Backend URL: <span className="font-mono text-slate-300">{apiBase}</span>
-                <br />
-                Override with <span className="font-mono">NEXT_PUBLIC_API_BASE</span> in <span className="font-mono">web/.env.local</span>.
-              </p>
             </div>
           </main>
         )}
